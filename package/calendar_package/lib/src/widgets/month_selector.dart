@@ -20,7 +20,7 @@ class MonthSelector extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              DateFormat('MMMM yyyy').format(selectedDate),
+              DateFormat('MMMM').format(selectedDate),
               style:
                   const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
             ),
