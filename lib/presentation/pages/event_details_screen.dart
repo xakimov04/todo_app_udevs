@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:todo_app_udevs/presentation/pages/add_event_screen.dart';
 import 'package:todo_app_udevs/presentation/widgets/event_details_widgets/delete_button.dart';
@@ -17,11 +18,25 @@ class EventDetailsScreen extends StatefulWidget {
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
   late Event _event;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _event = widget.event;
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      setState(() {});
+    });
   }
 
   @override
@@ -45,11 +60,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Duration _remainingTime() {
-    final startTimeString = _event.time;
-    final startTime = DateTime.parse(startTimeString);
     final endTimeString = _event.endTime;
     final endTime = DateTime.parse(endTimeString);
-    return endTime.difference(startTime);
+    return endTime.difference(DateTime.now());
   }
 
   String _formatRemainingTime(Duration duration) {

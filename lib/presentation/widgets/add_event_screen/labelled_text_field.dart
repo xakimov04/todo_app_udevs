@@ -8,6 +8,7 @@ class LabelledTextField extends StatelessWidget {
   final IconData? suffixIcon;
   final VoidCallback? onTap;
   final ValueChanged<String>? onChanged;
+  final bool ignorePointers;
 
   const LabelledTextField({
     super.key,
@@ -15,7 +16,9 @@ class LabelledTextField extends StatelessWidget {
     required this.controller,
     this.maxLines = 1,
     this.suffixIcon,
-    this.onTap, this.onChanged,
+    this.onTap,
+    this.onChanged,
+    this.ignorePointers = false,
   });
 
   @override
@@ -29,6 +32,7 @@ class LabelledTextField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextField(
+          ignorePointers: ignorePointers,
           onChanged: onChanged,
           onTap: onTap,
           controller: controller,

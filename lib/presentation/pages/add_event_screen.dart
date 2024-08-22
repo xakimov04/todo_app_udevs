@@ -6,6 +6,7 @@ import 'package:todo_app_udevs/presentation/blocs/event_bloc/event_bloc.dart';
 import 'package:todo_app_udevs/presentation/widgets/add_event_screen/color_picker_dialog.dart';
 import 'package:todo_app_udevs/presentation/widgets/add_event_screen/labelled_text_field.dart';
 import 'package:todo_app_udevs/presentation/widgets/add_event_screen/priority_color_picker.dart';
+import 'package:todo_app_udevs/presentation/widgets/calendar_widgets/calendar_date_selector.dart';
 
 class AddEventScreen extends StatefulWidget {
   final Event? event;
@@ -24,6 +25,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final _startTimeController = TextEditingController();
   final _endTimeController = TextEditingController();
   Color _selectedColor = Colors.red;
+  DateTime _selectedDate = DateTime.now();
 
   DateTime? _selectedStartTime;
   DateTime? _selectedEndTime;
@@ -36,12 +38,11 @@ class _AddEventScreenState extends State<AddEventScreen> {
       _descriptionController.text = widget.event!.description;
       _locationController.text = widget.event!.location;
       _selectedStartTime = widget.event!.dateTime;
-      _selectedEndTime = widget.event!.endTime as DateTime?; 
+      _selectedEndTime = widget.event!.endTime as DateTime?;
       _startTimeController.text = _formatDateTime(_selectedStartTime!);
       _endTimeController.text = _formatDateTime(_selectedEndTime!);
       _selectedColor = Color(widget.event!.color);
     } else {
-      // Set the current time as the default start time
       _selectedStartTime = DateTime.now();
       _startTimeController.text = _formatDateTime(_selectedStartTime!);
     }
@@ -88,8 +89,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
         name: _nameController.text,
         description: _descriptionController.text,
         location: _locationController.text,
-        time: _startTimeController.text, // Store the start time in 'time'
-        endTime: _endTimeController.text, // Store the end time in 'endTime'
+        time: _startTimeController.text,
+        endTime: _endTimeController.text,
         color: _selectedColor.value,
         dateTime: _selectedStartTime!,
       );
@@ -112,42 +113,85 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
   Future<void> _pickDateTime(TextEditingController controller,
       {required bool isStartTime}) async {
-    final DateTime? pickedDate = await showDatePicker(
+    final selectedDate = await showDialog<DateTime>(
       context: context,
-      initialDate: isStartTime && _selectedStartTime != null
-          ? _selectedStartTime!
-          : DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      builder: (context) => AlertDialog(
+        title: Text(isStartTime ? 'Select Start Date' : 'Select End Date'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: CalendarDateSelector(
+            onDateSelected: (date) {
+              setState(() {
+                _selectedDate = date;
+              });
+              context.read<EventBloc>().add(LoadEvents(date: _selectedDate));
+            },
+            eventDates: const [],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context, _selectedDate);
+            },
+            child: const Text('Select'),
+          ),
+        ],
+      ),
     );
 
-    if (pickedDate != null) {
-      final TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(
-            isStartTime && _selectedStartTime != null
-                ? _selectedStartTime!
-                : DateTime.now()),
+    if (selectedDate != null) {
+      setState(() {
+        if (isStartTime) {
+          _selectedStartTime = selectedDate;
+        } else {
+          _selectedEndTime = selectedDate;
+        }
+      });
+
+      // Show the time picker after selecting the date
+      await _pickTime(controller, isStartTime: isStartTime);
+    }
+  }
+
+  Future<void> _pickTime(TextEditingController controller,
+      {required bool isStartTime}) async {
+    final selectedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(isStartTime
+          ? (_selectedStartTime ?? DateTime.now())
+          : (_selectedEndTime ?? DateTime.now())),
+    );
+
+    if (selectedTime != null) {
+      final now = DateTime.now();
+      final dateTime = DateTime(
+        isStartTime
+            ? (_selectedStartTime?.year ?? now.year)
+            : (_selectedEndTime?.year ?? now.year),
+        isStartTime
+            ? (_selectedStartTime?.month ?? now.month)
+            : (_selectedEndTime?.month ?? now.month),
+        isStartTime
+            ? (_selectedStartTime?.day ?? now.day)
+            : (_selectedEndTime?.day ?? now.day),
+        selectedTime.hour,
+        selectedTime.minute,
       );
 
-      if (pickedTime != null) {
-        setState(() {
-          final selectedDateTime = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            pickedTime.hour,
-            pickedTime.minute,
-          );
-          controller.text = _formatDateTime(selectedDateTime);
-
-          if (isStartTime) {
-            _selectedStartTime = selectedDateTime;
-          } else {
-            _selectedEndTime = selectedDateTime;
-          }
-        });
-      }
+      setState(() {
+        if (isStartTime) {
+          _selectedStartTime = dateTime;
+          _startTimeController.text = _formatDateTime(dateTime);
+        } else {
+          _selectedEndTime = dateTime;
+          _endTimeController.text = _formatDateTime(dateTime);
+        }
+      });
     }
   }
 
@@ -221,24 +265,27 @@ class _AddEventScreenState extends State<AddEventScreen> {
               ),
               const SizedBox(height: 16),
               GestureDetector(
+                onTap: () =>
+                    _pickDateTime(_startTimeController, isStartTime: true),
                 child: LabelledTextField(
+                  ignorePointers: true,
                   label: 'Event start date & time',
                   controller: _startTimeController,
                   suffixIcon: Icons.access_time,
-                  onTap: () =>
-                      _pickDateTime(_startTimeController, isStartTime: true),
                 ),
               ),
               const SizedBox(height: 16),
               GestureDetector(
+                onTap: () =>
+                    _pickDateTime(_endTimeController, isStartTime: false),
                 child: LabelledTextField(
+                  ignorePointers: true,
                   label: 'Event end date & time',
                   controller: _endTimeController,
                   suffixIcon: Icons.access_time,
-                  onTap: () =>
-                      _pickDateTime(_endTimeController, isStartTime: false),
                 ),
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),

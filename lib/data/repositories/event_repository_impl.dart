@@ -35,14 +35,15 @@ class EventRepositoryImpl implements EventRepository {
   @override
   Future<void> updateEvent(Event event) async {
     final eventModel = EventModel(
-        id: event.id,
-        name: event.name,
-        description: event.description,
-        location: event.location,
-        time: event.time,
-        color: event.color,
-        dateTime: event.dateTime,
-        endTime: event.endTime);
+      id: event.id,
+      name: event.name,
+      description: event.description,
+      location: event.location,
+      time: event.time,
+      color: event.color,
+      dateTime: event.dateTime,
+      endTime: event.endTime,
+    );
     return await localDataSource.updateEvent(eventModel);
   }
 }
