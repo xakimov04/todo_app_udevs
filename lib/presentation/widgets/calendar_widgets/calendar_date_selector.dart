@@ -3,12 +3,12 @@ import 'package:calendar_package/calendar_package.dart';
 
 class CalendarDateSelector extends StatefulWidget {
   final void Function(DateTime) onDateSelected;
-  final List<Map<String,dynamic>> eventDates; 
+  final List<Map<String, dynamic>> eventDates;
 
   const CalendarDateSelector({
     super.key,
     required this.onDateSelected,
-    required this.eventDates, 
+    required this.eventDates,
   });
 
   @override
@@ -16,19 +16,28 @@ class CalendarDateSelector extends StatefulWidget {
 }
 
 class _CalendarDateSelectorState extends State<CalendarDateSelector> {
-  DateTime _selectedDate = DateTime.now();
+  final ValueNotifier<DateTime> _selectedDate = ValueNotifier(DateTime.now());
+
+  @override
+  void dispose() {
+    _selectedDate.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return CalendarPage(
-      date: _selectedDate,
-      onDateChanged: (newDate) {
-        setState(() {
-          _selectedDate = newDate;
-        });
-        widget.onDateSelected(newDate); 
+    return ValueListenableBuilder<DateTime>(
+      valueListenable: _selectedDate,
+      builder: (context, selectedDate, child) {
+        return CalendarPage(
+          date: selectedDate,
+          onDateChanged: (newDate) {
+            _selectedDate.value = newDate;
+            widget.onDateSelected(newDate);
+          },
+          eventDates: widget.eventDates,
+        );
       },
-      eventDates: widget.eventDates, 
     );
   }
 }
